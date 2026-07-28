@@ -5,7 +5,8 @@
   "scripts": {
     "typecheck": "tsc --noEmit",
     "lint": "eslint src",
-    "test": "tsc -p tsconfig.json --noEmit false --outDir .tmp-test --rootDir src --module commonjs --moduleResolution node && node --test .tmp-test/core/**/*.test.js"
+    "test": "tsc -p tsconfig.json --noEmit false --outDir .tmp-test --rootDir src --module commonjs --moduleResolution node && node --test .tmp-test/core/**/*.test.js",
+    "sim": "tsc -p tsconfig.json --noEmit false --outDir .tmp-test --rootDir src --module commonjs --moduleResolution node && node .tmp-test/core/sim/run.js"
   },
   "devDependencies": {
     "@types/node": "^22",

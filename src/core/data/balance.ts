@@ -216,7 +216,13 @@ export const CONSUMPTION_BALANCE = {
   clothing: {
     cost: [8, 25, 70, 180],
     usesSlot: false,
-    fitEffects: { sociability: 3, esteem: 3 },
+    // §6-4 표는 "의상 적정 → 사회성 +, 자존감 +"이지만 자존감을 뺐다.
+    //
+    // §3-4가 자존감을 "돈으로 살 수 없음"으로 못박고 있어 두 조항이 충돌한다.
+    // 매 턴 붙는 효과라 19턴이면 자존감 +57이 되고, 그러면 관계를 한 번도
+    // 안 쌓은 플레이도 자존감이 높게 끝나 대학 티어와 삶의 질이 갈라지지 않는다.
+    // 결핍 페널티(자존감 −)는 그대로 둔다 — 위축은 돈으로 생기는 게 맞다.
+    fitEffects: { sociability: 3 },
   },
   housing: {
     cost: [20, 50, 130, 320],

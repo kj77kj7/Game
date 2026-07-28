@@ -91,7 +91,8 @@ export function applyAction(
 
   if (state.age < balance.unlockAge) return { state, blocked: 'locked' };
 
-  const cost = actionCost(state, id);
+  const grade = repeatGradeOf(state.actionCounts[id] ?? 0);
+  const cost = Math.round(balance.cost * grade.cost);
   if (state.funds < cost) return { state, blocked: 'funds' };
 
   const paid: GameState = { ...state, funds: state.funds - cost };
@@ -109,7 +110,9 @@ export function applyAction(
   const mismatchCount = isTraining && !matched ? state.mismatchCount + 1 : state.mismatchCount;
   const penalized = isTraining && !matched && mismatchCount >= TALENT.mismatchThreshold;
 
-  const growth = growthMultiplier(state, meta.category === 'subject');
+  // 반복 등급은 비용과 효과를 함께 올린다 (설계서 §9).
+  // 비용만 올리고 효과를 빼먹으면 반복이 순수한 손해가 되고, 숙련·심화 표기가 거짓말이 된다.
+  const growth = growthMultiplier(state, meta.category === 'subject') * grade.effect;
   const talentScale = matched ? TALENT.bonus : 1;
 
   const dynamicDelta: StatDelta =

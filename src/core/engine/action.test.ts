@@ -91,6 +91,15 @@ test('반복할수록 효과도 비용도 커진다', () => {
     actionCost(veteran, 'cramSchool'),
     Math.round(ACTION_BALANCE.cramSchool.cost * repeatGradeOf(9).cost),
   );
+
+  // 비용만 오르고 효과가 안 오르면 반복이 순수한 손해가 된다
+  const freshGain = applyAction(fresh, 'cramSchool', 'math').state.stats.math;
+  const veteranGain = applyAction(veteran, 'cramSchool', 'math').state.stats.math;
+
+  assert.ok(veteranGain > freshGain);
+  assert.ok(
+    Math.abs(veteranGain / freshGain - repeatGradeOf(9).effect / repeatGradeOf(0).effect) < 1e-9,
+  );
 });
 
 test('재능 밖 행동을 반복하면 문턱에서 페널티가 붙는다', () => {
