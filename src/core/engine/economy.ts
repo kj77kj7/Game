@@ -160,6 +160,20 @@ export function consumptionOutcome(state: GameState, stage: AgeStage): Consumpti
   return { upkeep, delta: mergeDelta(...deltas) };
 }
 
+/**
+ * 적정선 대비 이탈도. 음수는 결핍, 양수는 과잉이다.
+ * 아이 대사가 이 값을 읽는다 — 결핍이면 조르고, 과잉이면 더 좋은 걸 찾는다 (설계서 §13).
+ */
+export function consumptionGap(state: GameState, stage: AgeStage): number {
+  const total = UPKEEP_CATEGORIES.reduce((sum, category) => {
+    const tier = state.consumption[category];
+    const steps = distance(tier, stage);
+    return sum + (fitOf(tier, stage) === 'lack' ? -steps : steps);
+  }, 0);
+
+  return Math.round(total / UPKEEP_CATEGORIES.length);
+}
+
 /** 집이 적정 티어면 교과 성장에 보너스가 붙는다 */
 export function housingIsFit(state: GameState, stage: AgeStage): boolean {
   return fitOf(state.consumption.housing, stage) === 'fit';

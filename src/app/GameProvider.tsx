@@ -4,6 +4,7 @@ import { createContext, useCallback, useEffect, useMemo, useRef, useState } from
 import type { PropsWithChildren, ReactElement } from 'react';
 
 import { CARE } from '../core/data/balance';
+import { selectDialogueAvoiding } from '../core/data/dialogue';
 import {
   acceptRequest,
   accrue,
@@ -16,11 +17,14 @@ import {
   overtime,
   rejectRequest,
   rollRequest,
+  consumptionGap,
   spendSlot,
   stageOf,
+  targetFieldOf,
   travel,
 } from '../core/engine';
 import { createInitialState, deserialize, serialize } from '../core/state';
+import { roll } from '../core/util/rng';
 import type {
   ActionId,
   ConsumptionTier,
@@ -49,6 +53,8 @@ export interface LiveState {
 
 export interface GameActions {
   start(): void;
+  /** 이어하기 버튼을 보여줄지 판단한다. 복원은 하지 않는다 */
+  hasSave(): Promise<boolean>;
   resume(): Promise<boolean>;
   act(id: ActionId, chosenSubject?: SubjectStat): void;
   care(need: NeedKey): void;
@@ -65,6 +71,8 @@ export interface GameActions {
 export interface GameContextValue {
   /** 아직 시작하지 않았으면 null */
   state: TurnState | null;
+  /** 이번 턴의 아이 대사. 한 턴에 하나만 바뀐다 (설계서 §13) */
+  line: string;
   actions: GameActions;
 }
 
@@ -82,6 +90,30 @@ const toLiveState = (state: GameState): LiveState => ({
   funds: state.funds,
 });
 
+/**
+ * 대사는 턴이 넘어갈 때만 새로 뽑는다.
+ * 1초 틱마다 다시 뽑으면 아이가 매초 다른 말을 하고, 그건 §13의 "한 턴에 하나"가 아니다.
+ */
+function pickLine(state: GameState, match: 'match' | 'mismatch' | 'neutral', previous: string): string {
+  const rolled = roll(state.seed);
+
+  return selectDialogueAvoiding(
+    {
+      age: state.age,
+      hunger: state.needs.hunger,
+      hygiene: state.needs.hygiene,
+      stress: state.stats.stress,
+      esteem: state.stats.esteem,
+      independence: state.stats.independence,
+      bond: state.bond,
+      consumptionGap: consumptionGap(state, stageOf(state.age)),
+      talentMatch: match,
+    },
+    rolled.value,
+    previous,
+  );
+}
+
 /** 자리를 비운 동안의 수급과 니즈 감소를 한 번에 반영한다. 벌점은 없다 */
 function catchUp(state: GameState, now: number): GameState {
   return accrue(drain(state, now - state.lastSeenAt), now);
@@ -94,6 +126,8 @@ export function GameProvider({
   const stateRef = useRef<GameState | null>(null);
   const [turn, setTurn] = useState<TurnState | null>(null);
   const [live, setLive] = useState<LiveState | null>(null);
+  const [line, setLine] = useState('');
+  const lastMatchRef = useRef<'match' | 'mismatch' | 'neutral'>('neutral');
 
   const saveKeyRef = useRef<Promise<string> | null>(null);
   const saveKey = useCallback((): Promise<string> => {
@@ -107,6 +141,11 @@ export function GameProvider({
     stateRef.current = next;
     setTurn(toTurnState(next));
     setLive(toLiveState(next));
+  }, []);
+
+  /** 턴이 바뀌는 지점에서만 부른다 */
+  const refreshLine = useCallback((next: GameState): void => {
+    setLine((previous) => pickLine(next, lastMatchRef.current, previous));
   }, []);
 
   /** 슬롯을 쓰는 행동의 공통 관문. 슬롯이 없으면 아무 일도 일어나지 않는다 */
@@ -146,7 +185,14 @@ export function GameProvider({
     () => ({
       start() {
         const now = Date.now();
-        commit(createInitialState(now, now));
+        const fresh = createInitialState(now, now);
+        lastMatchRef.current = 'neutral';
+        commit(fresh);
+        refreshLine(fresh);
+      },
+
+      async hasSave() {
+        return (await platform.storage.get(await saveKey())) !== null;
       },
 
       async resume() {
@@ -156,12 +202,24 @@ export function GameProvider({
         const loaded = deserialize(raw);
         if (loaded === null) return false;
 
-        commit(catchUp(loaded, Date.now()));
+        const restored = catchUp(loaded, Date.now());
+        commit(restored);
+        refreshLine(restored);
         return true;
       },
 
       act(id, chosenSubject) {
-        spend((state) => applyAction(state, id, chosenSubject).state);
+        spend((state) => {
+          const target = targetFieldOf(state, id, chosenSubject);
+          lastMatchRef.current =
+            target === null
+              ? 'neutral'
+              : state.talents.some((t) => t === target)
+                ? 'match'
+                : 'mismatch';
+
+          return applyAction(state, id, chosenSubject).state;
+        });
       },
 
       care(need) {
@@ -219,15 +277,19 @@ export function GameProvider({
 
         const rolled = rollRequest(endTurn(current));
         commit(rolled.state);
+        refreshLine(rolled.state);
 
         // 자동 저장은 턴 종료 시점에만 한다. 실패해도 다음 턴이 다시 저장한다 (설계서 §15).
         void saveKey().then((key) => platform.storage.set(key, serialize(rolled.state)));
       },
     }),
-    [commit, platform, saveKey, spend],
+    [commit, platform, refreshLine, saveKey, spend],
   );
 
-  const gameValue = useMemo<GameContextValue>(() => ({ state: turn, actions }), [turn, actions]);
+  const gameValue = useMemo<GameContextValue>(
+    () => ({ state: turn, line, actions }),
+    [turn, line, actions],
+  );
 
   return (
     <GameContext.Provider value={gameValue}>

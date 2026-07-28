@@ -8,6 +8,7 @@ export { careGrowthBonus, drain, fill } from './care';
 export {
   accrue,
   buyUpgrade,
+  consumptionGap,
   consumptionOutcome,
   fitOf,
   housingIsFit,

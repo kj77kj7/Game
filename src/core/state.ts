@@ -1,6 +1,6 @@
 /** 초기 상태 생성, 직렬화/역직렬화 */
 
-import { INITIAL, STAT_RANGE, TALENT, TURN } from './data/balance';
+import { INITIAL, STAT_GRADES, STAT_RANGE, TALENT, TURN } from './data/balance';
 import { TALENT_FIELDS } from './data/talents';
 import type { GameState, StatDelta, StatKey, TalentField } from './types';
 import { rollPickDistinct } from './util/rng';
@@ -85,6 +85,15 @@ export function applyDelta(state: GameState, delta: StatDelta): GameState {
   }
 
   return { ...state, stats, bond };
+}
+
+/**
+ * 수치를 등급 이름으로 바꾼다. 화면에는 숫자를 내보내지 않는다 (설계서 §12).
+ * 경계값은 엔딩 판정 문턱과 같은 balance.ts에 있다.
+ */
+export function statGrade(value: number): string {
+  const matched = STAT_GRADES.find((g) => value <= g.max);
+  return (matched ?? STAT_GRADES[STAT_GRADES.length - 1] ?? STAT_GRADES[0]).label;
 }
 
 /** 여러 출처의 증감을 하나로 합친다. 같은 키는 더한다 */

@@ -1,6 +1,11 @@
 /** 앱인토스 SDK 구현체 */
 
-import { GoogleAdMob, Storage as TossStorage, getUserKeyForGame } from '@apps-in-toss/framework';
+import {
+  GoogleAdMob,
+  Storage as TossStorage,
+  closeView,
+  getUserKeyForGame,
+} from '@apps-in-toss/framework';
 import type { ShowAdMobEvent } from '@apps-in-toss/framework';
 
 import type { Ads, Identity, Platform, RewardOutcome, Storage } from '../platform';
@@ -133,5 +138,8 @@ export function createTossPlatform(adGroupId: string): Platform {
     storage: createStorage(),
     ads: createAds(adGroupId),
     identity: createIdentity(),
+    close() {
+      void closeView();
+    },
   };
 }
