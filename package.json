@@ -12,5 +12,8 @@
     "@typescript-eslint/parser": "^8",
     "eslint": "^9",
     "typescript": "^5.7.0"
+  },
+  "dependencies": {
+    "@apps-in-toss/framework": "^2.10.7"
   }
 }
