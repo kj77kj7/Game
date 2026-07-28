@@ -63,6 +63,9 @@ export type UpgradeId = keyof typeof UPGRADE_BALANCE;
 export type ConsumptionCategory = keyof typeof CONSUMPTION_BALANCE;
 export type ConsumptionTier = 1 | 2 | 3 | 4;
 
+/** 지속 설정 3종. 여행은 단발 행동이라 슬롯을 쓰고, 티어를 눌러 바꾸는 대상이 아니다 */
+export type UpkeepCategory = Exclude<ConsumptionCategory, 'travel'>;
+
 export type MajorId =
   | 'humanities'
   | 'engineering'
