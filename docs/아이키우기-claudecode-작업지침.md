@@ -47,7 +47,7 @@ child-raising-game/
     │   ├── engine/
     │   │   ├── index.ts           # 외부 공개 API만 재노출
     │   │   ├── turn.ts            # 턴 진행, 슬롯 소비
-    │   │   ├── action.ts          # 행동 적용, 반복 등급, 적성
+    │   │   ├── action.ts          # 행동 적용, 반복 등급, 재능
     │   │   ├── care.ts            # 돌봄 니즈 (허기·청결) 실시간 감소
     │   │   ├── economy.ts         # 자동 수급, 업그레이드, 소비 적정선
     │   │   ├── request.ts         # 요구 이벤트 발생·수용·거절
@@ -200,7 +200,7 @@ dialogue.ts는 이미 작성된 파일이 있으니 그대로 배치해.
 ```
 `core/engine/` 하위를 작성해줘. 전부 순수 함수로.
 - turn.ts: 턴 진행, 슬롯 소비
-- action.ts: 행동 적용, 반복 등급, 적성 보정
+- action.ts: 행동 적용, 반복 등급, 재능 보너스
 - care.ts: 돌봄 니즈 감소 및 충족
 - economy.ts: 자동 수급, 업그레이드, 소비 적정선 판정
 - request.ts: 요구 발생·수용·거절

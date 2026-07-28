@@ -44,8 +44,8 @@ export interface DialogueContext {
   // 소비 (적정선 대비 이탈도. -2 ~ +2, 0이 적정)
   consumptionGap: number;
 
-  /** 적성 계열과 최근 행동이 일치했는지 */
-  aptitudeMatch: 'match' | 'mismatch' | 'neutral';
+  /** 재능 2종과 최근 행동이 일치했는지 */
+  talentMatch: 'match' | 'mismatch' | 'neutral';
 }
 
 export interface DialogueEntry {
@@ -63,7 +63,7 @@ export interface DialogueEntry {
 //   70  돌봄 니즈 (허기 / 청결)
 //   60  기질 경고 (자립성 / 자존감 / 애착)
 //   50  소비 이탈
-//   40  적성 반응
+//   40  재능 반응
 //   20  긍정 상태
 //   10  일상 (조건 없음, 폴백)
 // ---------------------------------------------------------------------------
@@ -214,12 +214,15 @@ export const DIALOGUE: DialogueEntry[] = [
   },
 
   // -------------------------------------------------------------------------
-  // 적성 반응
+  // 재능 반응
+  //
+  // 재능은 UI에 목록으로 노출하지 않는다. 유저가 아이의 재능을 알아채는 통로가
+  // 이 두 항목뿐이므로, 소비 이탈보다 낮고 긍정 상태보다는 높게 둔다.
   // -------------------------------------------------------------------------
   {
-    id: 'aptitude_mismatch',
+    id: 'talent_mismatch',
     priority: 42,
-    when: (c) => c.aptitudeMatch === 'mismatch',
+    when: (c) => c.talentMatch === 'mismatch',
     lines: {
       toddler: ['이거 재미없어요.', '다른 거 하면 안 돼요?'],
       child: [
@@ -235,9 +238,9 @@ export const DIALOGUE: DialogueEntry[] = [
     },
   },
   {
-    id: 'aptitude_match',
+    id: 'talent_match',
     priority: 40,
-    when: (c) => c.aptitudeMatch === 'match',
+    when: (c) => c.talentMatch === 'match',
     lines: {
       toddler: ['이거 재밌어요!', '또 하고 싶어요!'],
       child: [
