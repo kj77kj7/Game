@@ -172,6 +172,8 @@ export interface GameState {
 
   /** 연속 야근 횟수. 야근을 안 한 턴에 0으로 돌아간다 */
   overtimeStreak: number;
+  /** 이번 턴에 야근을 했는가. 턴 종료 시 연속 횟수를 이어갈지 끊을지 판단한다 */
+  overtimeUsedThisTurn: boolean;
   /** 마지막 여행 이후 지난 턴 수 */
   turnsSinceTravel: number;
 

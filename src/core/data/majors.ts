@@ -10,6 +10,15 @@ const mean = (values: readonly number[]): number =>
 
 const peak = (values: readonly number[]): number => Math.max(...values);
 
+export const MAJOR_IDS = [
+  'humanities',
+  'engineering',
+  'commerce',
+  'medicine',
+  'arts',
+  'sports',
+] as const satisfies readonly MajorId[];
+
 export const MAJOR_LABEL = {
   humanities: '인문',
   engineering: '자연공학',

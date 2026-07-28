@@ -41,6 +41,18 @@ export const AGE_STAGES = [
 
 export const STAT_RANGE = { min: 0, max: 100 } as const;
 
+/** [임시] 시작값. 설계서에 명시가 없다 */
+export const INITIAL = {
+  /** 교과·운동·예술 세부 11종 */
+  ability: 0,
+  /** 건강·사회성·자존감·자립성. 스트레스만 0에서 시작한다 */
+  temperament: 50,
+  stress: 0,
+  needs: 100,
+  funds: 100,
+  bond: 50,
+} as const;
+
 // ---------------------------------------------------------------------------
 // 스트레스 (설계서 §8)
 //
