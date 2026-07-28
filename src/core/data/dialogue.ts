@@ -328,7 +328,7 @@ export function selectDialogue(ctx: DialogueContext, rand: number): string {
   const pool = top.lines[band];
   if (!pool || pool.length === 0) return '';
 
-  return pool[Math.floor(rand * pool.length) % pool.length];
+  return pool[Math.floor(rand * pool.length) % pool.length] ?? '';
 }
 
 /** 직전에 나온 대사를 피해 연속 반복을 막는다. */
@@ -347,5 +347,5 @@ export function selectDialogueAvoiding(
   const top = matched.reduce((a, b) => (b.priority > a.priority ? b : a));
   const pool = top.lines[band].filter((l) => l !== previous);
 
-  return pool.length > 0 ? pool[Math.floor(rand * pool.length) % pool.length] : first;
+  return pool[Math.floor(rand * pool.length) % pool.length] ?? first;
 }
