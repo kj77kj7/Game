@@ -179,6 +179,11 @@ export interface GameState {
   overtimeUsedThisTurn: boolean;
   /** 마지막 여행 이후 지난 턴 수 */
   turnsSinceTravel: number;
+  /**
+   * 이번 턴 교과 성장이 멈췄는가.
+   * 학원 그만두기 수용(§10)과 T4 장기여행(§6-4)이 세운다. 턴이 끝나면 풀린다.
+   */
+  subjectsStalled: boolean;
 
   /** 오프라인 수급 계산용. epoch ms */
   lastSeenAt: number;

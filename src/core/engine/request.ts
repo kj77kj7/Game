@@ -70,6 +70,8 @@ export function acceptRequest(state: GameState, id: RequestId): GameState {
     ...state,
     funds: Math.max(0, state.funds - b.cost),
     pendingRequest: null,
+    // 학원을 그만두면 그 턴 교과는 제자리다. 스트레스만 내려가고 끝나면 공짜 선택이 된다.
+    subjectsStalled: state.subjectsStalled || stallsSubjects(id),
   };
 
   return applyDelta(paid, b.accept);

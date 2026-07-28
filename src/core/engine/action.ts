@@ -142,6 +142,9 @@ export function applyAction(
 }
 
 function growthMultiplier(state: GameState, isSubject: boolean): number {
+  // 정체된 턴에는 교과가 오르지 않는다. 다른 계열은 그대로 자란다.
+  if (isSubject && state.subjectsStalled) return 0;
+
   const band = stressBandOf(state.stats.stress);
   const housing =
     isSubject && housingIsFit(state, stageOf(state.age)) ? 1 + HOUSING_LEARNING_BONUS : 1;

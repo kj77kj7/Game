@@ -100,3 +100,10 @@ test('같은 시드는 같은 결과를 낸다', () => {
   assert.equal(a.request, b.request);
   assert.equal(a.state.seed, b.state.seed);
 });
+
+test('학원 그만두기를 수용하면 그 턴 교과가 멈춘다', () => {
+  const state = base({ age: 14, pendingRequest: 'quitAcademy' });
+
+  assert.equal(acceptRequest(state, 'quitAcademy').subjectsStalled, true);
+  assert.equal(acceptRequest(base({ age: 14 }), 'sneakers').subjectsStalled, false);
+});

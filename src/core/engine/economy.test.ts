@@ -14,6 +14,7 @@ import {
   offlineCapMs,
   overtime,
   overtimeBondPenalty,
+  travel,
   tierEffect,
   upgradeCost,
 } from './economy';
@@ -126,6 +127,28 @@ test('적정선을 맞추면 유지비만 나가고 효과는 긍정이다', () 
   assert.ok(upkeep > 0);
   assert.ok((delta.health ?? 0) > 0);
   assert.ok((delta.stress ?? 0) < 0);
+});
+
+test('매 턴 여행하면 애착 획득이 급감한다', () => {
+  // endTurn이 turnsSinceTravel을 1 올려놓기 때문에, 0으로만 비교하면 이 페널티가 영영 안 걸린다.
+  const rested = base({ turnsSinceTravel: 5, funds: 10000 });
+  const justTravelled = base({ turnsSinceTravel: 1, funds: 10000 });
+
+  const restedGain = travel(rested, 1, 'infant').bond - rested.bond;
+  const repeatGain = travel(justTravelled, 1, 'infant').bond - justTravelled.bond;
+
+  assert.ok(repeatGain < restedGain);
+  assert.ok(
+    travel(justTravelled, 1, 'infant').stats.independence < justTravelled.stats.independence,
+    '매 턴 여행은 자립성을 깎는다',
+  );
+});
+
+test('T4 여행은 그 턴 교과를 멈춘다', () => {
+  const state = base({ turnsSinceTravel: 5, funds: 10000 });
+
+  assert.equal(travel(state, 3, 'middle').subjectsStalled, false);
+  assert.equal(travel(state, 4, 'middle').subjectsStalled, true);
 });
 
 test('연속 야근은 애착을 더 크게 깎는다', () => {

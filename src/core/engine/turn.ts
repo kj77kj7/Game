@@ -65,6 +65,7 @@ export function endTurn(state: GameState): GameState {
     age: state.age + 1,
     slots: TURN.slotsPerTurn,
     turnsSinceTravel: state.turnsSinceTravel + 1,
+    subjectsStalled: false,
     pendingRequest: null,
     overtimeStreak: state.overtimeUsedThisTurn ? state.overtimeStreak : 0,
     overtimeUsedThisTurn: false,

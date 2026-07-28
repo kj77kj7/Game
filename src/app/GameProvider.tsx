@@ -5,6 +5,8 @@ import type { PropsWithChildren, ReactElement } from 'react';
 
 import { CARE } from '../core/data/balance';
 import { selectDialogueAvoiding } from '../core/data/dialogue';
+import { SELF_RESTRAINT_LINES } from '../core/data/requests';
+import { OVERTIME } from '../core/data/balance';
 import {
   acceptRequest,
   accrue,
@@ -14,6 +16,8 @@ import {
   endTurn,
   fill,
   grantAdSlot,
+  isFinished,
+  judge,
   overtime,
   rejectRequest,
   rollRequest,
@@ -28,6 +32,7 @@ import { roll } from '../core/util/rng';
 import type {
   ActionId,
   ConsumptionTier,
+  Ending,
   GameState,
   NeedKey,
   SubjectStat,
@@ -73,6 +78,8 @@ export interface GameContextValue {
   state: TurnState | null;
   /** 이번 턴의 아이 대사. 한 턴에 하나만 바뀐다 (설계서 §13) */
   line: string;
+  /** 19세 판정이 끝났으면 결과. 아직이면 null */
+  ending: Ending | null;
   actions: GameActions;
 }
 
@@ -114,6 +121,17 @@ function pickLine(state: GameState, match: 'match' | 'mismatch' | 'neutral', pre
   );
 }
 
+function pickSelfRestraintLine(seed: number): string {
+  const rolled = roll(seed);
+  const index = Math.floor(rolled.value * SELF_RESTRAINT_LINES.length);
+  return SELF_RESTRAINT_LINES[index] ?? SELF_RESTRAINT_LINES[0] ?? '';
+}
+
+/** 연속 야근 중에는 무슨 상태든 아이가 서운함을 먼저 말한다 */
+function pickNegativeLine(state: GameState): string {
+  return pickLine({ ...state, bond: 0 }, 'neutral', '');
+}
+
 /** 자리를 비운 동안의 수급과 니즈 감소를 한 번에 반영한다. 벌점은 없다 */
 function catchUp(state: GameState, now: number): GameState {
   return accrue(drain(state, now - state.lastSeenAt), now);
@@ -127,6 +145,7 @@ export function GameProvider({
   const [turn, setTurn] = useState<TurnState | null>(null);
   const [live, setLive] = useState<LiveState | null>(null);
   const [line, setLine] = useState('');
+  const [ending, setEnding] = useState<Ending | null>(null);
   const lastMatchRef = useRef<'match' | 'mismatch' | 'neutral'>('neutral');
 
   const saveKeyRef = useRef<Promise<string> | null>(null);
@@ -187,6 +206,7 @@ export function GameProvider({
         const now = Date.now();
         const fresh = createInitialState(now, now);
         lastMatchRef.current = 'neutral';
+        setEnding(null);
         commit(fresh);
         refreshLine(fresh);
       },
@@ -205,6 +225,7 @@ export function GameProvider({
         const restored = catchUp(loaded, Date.now());
         commit(restored);
         refreshLine(restored);
+        setEnding(isFinished(restored) ? judge(restored) : null);
         return true;
       },
 
@@ -275,9 +296,28 @@ export function GameProvider({
         const current = stateRef.current;
         if (current === null) return;
 
-        const rolled = rollRequest(endTurn(current));
+        const advanced = endTurn(current);
+
+        // 19세는 판정 턴이다. 여기서 멈추지 않으면 나이가 끝없이 올라간다.
+        if (isFinished(advanced)) {
+          commit(advanced);
+          setEnding(judge(advanced));
+          void saveKey().then((key) => platform.storage.remove(key));
+          return;
+        }
+
+        const rolled = rollRequest(advanced);
         commit(rolled.state);
-        refreshLine(rolled.state);
+
+        if (rolled.selfRestrained) {
+          // 참은 걸 보여줘야 자립성이 보상으로 읽힌다 (설계서 §10).
+          setLine(pickSelfRestraintLine(rolled.state.seed));
+        } else if (rolled.state.overtimeStreak >= OVERTIME.negativeDialogueStreak) {
+          // 연속 야근 3회 이상이면 대사를 부정으로 고정한다 (설계서 §6-3).
+          setLine(pickNegativeLine(rolled.state));
+        } else {
+          refreshLine(rolled.state);
+        }
 
         // 자동 저장은 턴 종료 시점에만 한다. 실패해도 다음 턴이 다시 저장한다 (설계서 §15).
         void saveKey().then((key) => platform.storage.set(key, serialize(rolled.state)));
@@ -287,8 +327,8 @@ export function GameProvider({
   );
 
   const gameValue = useMemo<GameContextValue>(
-    () => ({ state: turn, line, actions }),
-    [turn, line, actions],
+    () => ({ state: turn, line, ending, actions }),
+    [turn, line, ending, actions],
   );
 
   return (

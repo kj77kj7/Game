@@ -66,6 +66,7 @@ export function createInitialState(seed: number, now: number): GameState {
     overtimeStreak: 0,
     overtimeUsedThisTurn: false,
     turnsSinceTravel: 0,
+    subjectsStalled: false,
     lastSeenAt: now,
   };
 }

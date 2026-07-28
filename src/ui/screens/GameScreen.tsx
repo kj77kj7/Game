@@ -14,6 +14,8 @@ import { Child } from '../components/Child';
 import { NeedBar } from '../components/NeedBar';
 import { SpeechBubble } from '../components/SpeechBubble';
 import { StatDrawer } from '../components/StatDrawer';
+import { EndingScreen } from './EndingScreen';
+import { TitleScreen } from './TitleScreen';
 import { color, font, radius, space } from '../theme/tokens';
 
 type Panel = 'none' | 'actions' | 'stats';
@@ -21,12 +23,16 @@ type Panel = 'none' | 'actions' | 'stats';
 /**
  * 세로 고정, 스크롤 없이 한 화면 (설계서 §12).
  * 스크롤이 생기는 건 행동 목록과 스탯 서랍뿐이고, 둘 다 모달 안에 있다.
+ *
+ * 세 국면(타이틀·진행·엔딩)을 여기서 가른다.
+ * 상태가 곧 국면이라 라우터를 따로 두면 같은 조건을 두 곳에서 판단하게 된다.
  */
 export function GameScreen({ onExit }: { onExit: () => void }): ReactElement | null {
-  const { state, line, actions } = useGame();
+  const { state, line, ending, actions } = useGame();
   const [panel, setPanel] = useState<Panel>('none');
 
-  if (state === null) return null;
+  if (state === null) return <TitleScreen />;
+  if (ending !== null) return <EndingScreen ending={ending} onRestart={actions.start} />;
 
   const request = state.pendingRequest;
   const mood = stressBandOf(state.stats.stress).moodLabel;

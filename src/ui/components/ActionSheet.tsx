@@ -1,12 +1,13 @@
 /** 행동 선택지와 결과 미리보기 */
 
+import { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import type { ReactElement } from 'react';
 
 import { ACTION_BALANCE, PREVIEW_STRONG } from '../../core/data/balance';
 import { ACTION_META } from '../../core/data/actions';
 import { TALENT_FIELDS } from '../../core/data/talents';
-import type { ActionBalance, ActionId, StatDelta } from '../../core/types';
+import type { ActionBalance, ActionId, StatDelta, SubjectStat } from '../../core/types';
 import { STAT_LABEL, color, font, radius, space } from '../theme/tokens';
 
 const ACTION_IDS = Object.keys(ACTION_META).filter(isActionId);
@@ -56,6 +57,20 @@ export function previewOf(id: ActionId): string[] {
   return chips.slice(0, 3);
 }
 
+const SUBJECT_CHOICES: readonly { key: SubjectStat; label: string }[] = [
+  { key: 'korean', label: '국어' },
+  { key: 'english', label: '영어' },
+  { key: 'math', label: '수학' },
+  { key: 'science', label: '과학' },
+  { key: 'socialStudies', label: '사회' },
+];
+
+/** 이 행동이 플레이어에게 과목을 고르게 하는가 */
+function needsSubject(id: ActionId): boolean {
+  const balance: ActionBalance = ACTION_BALANCE[id];
+  return balance.dynamic?.pick === 'chosen';
+}
+
 export function ActionSheet({
   age,
   funds,
@@ -65,30 +80,57 @@ export function ActionSheet({
   age: number;
   funds: number;
   slots: number;
-  onPick: (id: ActionId) => void;
+  onPick: (id: ActionId, subject?: SubjectStat) => void;
 }): ReactElement {
   const available = ACTION_IDS.filter((id) => age >= ACTION_BALANCE[id].unlockAge);
+
+  // 학습지·보습학원은 과목을 고르지 않으면 아무 과목도 오르지 않는다.
+  // 목록에서 바로 누르게 두면 스트레스만 올리고 끝나므로, 과목을 고른 뒤에야 실행된다.
+  const [pendingSubjectFor, setPendingSubjectFor] = useState<ActionId | null>(null);
 
   return (
     <ScrollView style={styles.root} contentContainerStyle={styles.content}>
       {available.map((id) => {
         const cost = ACTION_BALANCE[id].cost;
         const disabled = slots <= 0 || funds < cost;
+        const choosing = pendingSubjectFor === id;
 
         return (
-          <Pressable
-            key={id}
-            style={[styles.row, disabled && styles.disabled]}
-            disabled={disabled}
-            onPress={() => onPick(id)}
-            accessibilityRole="button"
-          >
-            <View style={styles.left}>
-              <Text style={styles.label}>{ACTION_META[id].label}</Text>
-              <Text style={styles.preview}>{previewOf(id).join(' · ')}</Text>
-            </View>
-            <Text style={styles.cost}>{cost === 0 ? '무료' : `${cost}`}</Text>
-          </Pressable>
+          <View key={id}>
+            <Pressable
+              style={[styles.row, disabled && styles.disabled, choosing && styles.choosing]}
+              disabled={disabled}
+              onPress={() => {
+                if (needsSubject(id)) setPendingSubjectFor(choosing ? null : id);
+                else onPick(id);
+              }}
+              accessibilityRole="button"
+            >
+              <View style={styles.left}>
+                <Text style={styles.label}>{ACTION_META[id].label}</Text>
+                <Text style={styles.preview}>{previewOf(id).join(' · ')}</Text>
+              </View>
+              <Text style={styles.cost}>{cost === 0 ? '무료' : `${cost}`}</Text>
+            </Pressable>
+
+            {choosing && (
+              <View style={styles.subjects}>
+                {SUBJECT_CHOICES.map((subject) => (
+                  <Pressable
+                    key={subject.key}
+                    style={styles.subjectChip}
+                    onPress={() => {
+                      setPendingSubjectFor(null);
+                      onPick(id, subject.key);
+                    }}
+                    accessibilityRole="button"
+                  >
+                    <Text style={styles.subjectLabel}>{subject.label}</Text>
+                  </Pressable>
+                ))}
+              </View>
+            )}
+          </View>
         );
       })}
     </ScrollView>
@@ -108,6 +150,21 @@ const styles = StyleSheet.create({
     paddingVertical: space.md,
   },
   disabled: { opacity: 0.4 },
+  choosing: { borderWidth: 2, borderColor: color.accent },
+  subjects: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: space.sm,
+    paddingTop: space.sm,
+    paddingHorizontal: space.sm,
+  },
+  subjectChip: {
+    backgroundColor: color.accent,
+    borderRadius: radius.pill,
+    paddingHorizontal: space.lg,
+    paddingVertical: space.sm,
+  },
+  subjectLabel: { color: color.textInverse, fontSize: font.caption, fontWeight: '600' },
   left: { gap: space.xs, flexShrink: 1 },
   label: { color: color.text, fontSize: font.body, fontWeight: '600' },
   preview: { color: color.textWeak, fontSize: font.caption },

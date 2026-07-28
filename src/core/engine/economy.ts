@@ -188,7 +188,9 @@ export function travel(state: GameState, tier: ConsumptionTier, stage: AgeStage)
   const cost = CONSUMPTION_BALANCE.travel.cost[tier - 1] ?? 0;
   if (state.funds < cost) return state;
 
-  const consecutive = state.turnsSinceTravel === 0;
+  // 직전 턴에 여행했으면 endTurn이 이미 1을 더해놓았다.
+  // 0으로만 비교하면 "매 턴 여행" 페널티가 영영 발동하지 않는다.
+  const consecutive = state.turnsSinceTravel <= 1;
   const base = tierEffect('travel', tier, stage);
 
   const bond = (base.bond ?? 0) * (consecutive ? TRAVEL_RULES.consecutiveBondScale : 1);
@@ -201,6 +203,8 @@ export function travel(state: GameState, tier: ConsumptionTier, stage: AgeStage)
     funds: state.funds - cost,
     consumption: { ...state.consumption, travel: tier },
     turnsSinceTravel: 0,
+    // T4 장기여행은 그 턴 교과를 멈춘다 (설계서 §6-4 여행 특칙).
+    subjectsStalled: state.subjectsStalled || tier >= TRAVEL_RULES.stallTier,
   };
 
   return applyDelta(paid, mergeDelta({ ...base, bond }, extra));

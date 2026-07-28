@@ -140,3 +140,26 @@ test('입시학원은 그 시점 최고 교과를 잡는다', () => {
 
   assert.equal(targetFieldOf(state, 'examAcademy'), 'english');
 });
+
+test('교과 정체 턴에는 교과만 멈추고 다른 계열은 자란다', () => {
+  const normal = base({ age: 10, subjectsStalled: false });
+  const stalled = base({ age: 10, subjectsStalled: true });
+
+  assert.ok(applyAction(normal, 'cramSchool', 'math').state.stats.math > normal.stats.math);
+  assert.equal(applyAction(stalled, 'cramSchool', 'math').state.stats.math, stalled.stats.math);
+
+  // 예체능은 그대로 자란다 — 학원을 그만둔 것이지 아이가 멈춘 게 아니다
+  assert.ok(applyAction(stalled, 'artAcademy').state.stats.fineArts > stalled.stats.fineArts);
+});
+
+test('과목을 고르지 않으면 학습지는 아무 과목도 올리지 않는다', () => {
+  const state = base({ age: 10 });
+  const without = applyAction(state, 'workbook').state.stats;
+
+  // 화면에서 과목 선택을 빼먹으면 스트레스만 오르는 행동이 된다.
+  // ActionSheet가 과목을 고른 뒤에만 실행하는 이유가 이것이다.
+  assert.equal(without.math, state.stats.math);
+  assert.ok(without.stress > state.stats.stress);
+
+  assert.ok(applyAction(state, 'workbook', 'math').state.stats.math > state.stats.math);
+});
