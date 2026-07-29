@@ -64,9 +64,20 @@ export function GameScreen({ onExit }: { onExit: () => void }): ReactElement | n
         emphasized={request !== null}
       />
 
-      <View style={styles.stage}>
+      {/*
+        아이를 누르면 스탯 서랍이 열린다.
+        하단 메뉴는 §12의 네 개(밥·옷장·대화·일정)로 고정이라 자리가 없고,
+        "아이가 어떻게 자랐는지"를 보려고 아이를 누르는 건 설명이 필요 없는 동작이다.
+      */}
+      <Pressable
+        style={styles.stage}
+        onPress={() => setPanel('stats')}
+        accessibilityRole="button"
+        accessibilityLabel="아이 성장 보기"
+      >
         <Child age={state.age} clothingTier={state.consumption.clothing} mood={band.band} />
-      </View>
+        <Text style={styles.stageHint}>탭해서 성장 보기</Text>
+      </Pressable>
 
       {request !== null && (
         <View style={styles.requestRow}>
@@ -189,6 +200,7 @@ const styles = StyleSheet.create({
   close: { padding: space.sm },
   closeLabel: { color: color.textWeak, fontSize: font.title },
   stage: { flex: 1, alignItems: 'center', justifyContent: 'flex-end' },
+  stageHint: { color: color.textWeak, fontSize: font.caption, marginTop: space.sm },
   requestRow: { flexDirection: 'row', gap: space.sm, justifyContent: 'center' },
   chip: {
     paddingHorizontal: space.lg,

@@ -8,7 +8,7 @@
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
     "test": "tsc -p tsconfig.test.json && node --test .tmp-test/core/**/*.test.js",
-    "test:rn": "jest --passWithNoTests",
+    "test:rn": "jest",
     "sim": "tsc -p tsconfig.test.json && node .tmp-test/core/sim/run.js"
   },
   "dependencies": {
