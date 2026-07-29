@@ -8,17 +8,19 @@ import type { ReactElement } from 'react';
 import { useCareTick } from '../../app/hooks/useCareTick';
 import { useGame } from '../../app/hooks/useGame';
 import { REQUEST_TEXT } from '../../core/data/requests';
-import { stressBandOf } from '../../core/engine';
+import { stageOf, stressBandOf } from '../../core/engine';
 import { ActionSheet } from '../components/ActionSheet';
+import type { ActionGroup } from '../components/ActionSheet';
+import { WardrobeSheet } from '../components/WardrobeSheet';
 import { Child } from '../components/Child';
 import { NeedBar } from '../components/NeedBar';
 import { SpeechBubble } from '../components/SpeechBubble';
 import { StatDrawer } from '../components/StatDrawer';
 import { EndingScreen } from './EndingScreen';
 import { TitleScreen } from './TitleScreen';
-import { color, font, radius, space } from '../theme/tokens';
+import { MENU_LABEL, color, font, radius, space } from '../theme/tokens';
 
-type Panel = 'none' | 'actions' | 'stats';
+type Panel = 'none' | 'schedule' | 'talk' | 'wardrobe' | 'stats';
 
 /**
  * 세로 고정, 스크롤 없이 한 화면 (설계서 §12).
@@ -35,7 +37,8 @@ export function GameScreen({ onExit }: { onExit: () => void }): ReactElement | n
   if (ending !== null) return <EndingScreen ending={ending} onRestart={actions.start} />;
 
   const request = state.pendingRequest;
-  const mood = stressBandOf(state.stats.stress).moodLabel;
+  const band = stressBandOf(state.stats.stress);
+  const stage = stageOf(state.age);
 
   // OS 뒤로가기 제스처를 못 쓰므로 닫기 버튼이 유일한 출구다.
   // 확인 모달 없이 닫으면 실수로 나가서 그 턴을 잃는다 (설계서 §16).
@@ -62,7 +65,7 @@ export function GameScreen({ onExit }: { onExit: () => void }): ReactElement | n
       />
 
       <View style={styles.stage}>
-        <Child age={state.age} clothingTier={state.consumption.clothing} />
+        <Child age={state.age} clothingTier={state.consumption.clothing} mood={band.band} />
       </View>
 
       {request !== null && (
@@ -76,7 +79,7 @@ export function GameScreen({ onExit }: { onExit: () => void }): ReactElement | n
         </View>
       )}
 
-      <NeedBar moodLabel={mood} onFill={actions.care} />
+      <NeedBar moodLabel={band.moodLabel} onFill={actions.care} />
 
       <View style={styles.slots}>
         <Text style={styles.slotText}>남은 슬롯 {state.slots}</Text>
@@ -87,11 +90,13 @@ export function GameScreen({ onExit }: { onExit: () => void }): ReactElement | n
         )}
       </View>
 
+      {/* 아이콘만 두지 않고 라벨을 병기한다 (조사 문서 §2-3) */}
       <View style={styles.menu}>
-        <MenuButton label="일정" onPress={() => setPanel('actions')} />
-        <MenuButton label="야근" onPress={actions.work} />
-        <MenuButton label="성장" onPress={() => setPanel('stats')} />
-        <MenuButton label="다음 해" onPress={actions.next} primary />
+        <MenuButton item={MENU_LABEL.meal} onPress={() => actions.care('hunger')} />
+        <MenuButton item={MENU_LABEL.wardrobe} onPress={() => setPanel('wardrobe')} />
+        <MenuButton item={MENU_LABEL.talk} onPress={() => setPanel('talk')} />
+        <MenuButton item={MENU_LABEL.schedule} onPress={() => setPanel('schedule')} />
+        <MenuButton item={MENU_LABEL.next} onPress={actions.next} primary />
       </View>
 
       <Modal visible={panel !== 'none'} animationType="slide" onRequestClose={() => setPanel('none')}>
@@ -100,7 +105,24 @@ export function GameScreen({ onExit }: { onExit: () => void }): ReactElement | n
             <Text style={styles.closeLabel}>✕</Text>
           </Pressable>
 
-          {panel === 'actions' && <ActionsPanel onPick={actions.act} slots={state.slots} age={state.age} />}
+          {(panel === 'schedule' || panel === 'talk') && (
+            <ActionsPanel
+              group={panel === 'schedule' ? 'training' : 'relation'}
+              age={state.age}
+              slots={state.slots}
+              onPick={actions.act}
+              onOvertime={actions.work}
+            />
+          )}
+          {panel === 'wardrobe' && (
+            <WardrobePanel
+              stage={stage}
+              current={state.consumption}
+              slots={state.slots}
+              onSetTier={actions.setTier}
+              onTravel={actions.goTravel}
+            />
+          )}
           {panel === 'stats' && <StatDrawer stats={state.stats} />}
         </View>
       </Modal>
@@ -114,25 +136,35 @@ function Funds(): ReactElement {
   return <Text style={styles.funds}>{Math.floor(live?.funds ?? 0).toLocaleString()}원</Text>;
 }
 
-function ActionsPanel({
-  age,
-  slots,
-  onPick,
-}: {
+/** 자금은 1초마다 움직인다. 목록만 따로 구독시켜 게임 화면이 초당 리렌더되지 않게 한다 */
+function ActionsPanel(props: {
+  group: ActionGroup;
   age: number;
   slots: number;
   onPick: ReturnType<typeof useGame>['actions']['act'];
+  onOvertime: () => void;
 }): ReactElement {
   const live = useCareTick();
-  return <ActionSheet age={age} slots={slots} funds={live?.funds ?? 0} onPick={onPick} />;
+  return <ActionSheet {...props} funds={live?.funds ?? 0} />;
+}
+
+function WardrobePanel(props: {
+  stage: Parameters<typeof WardrobeSheet>[0]['stage'];
+  current: Parameters<typeof WardrobeSheet>[0]['current'];
+  slots: number;
+  onSetTier: ReturnType<typeof useGame>['actions']['setTier'];
+  onTravel: ReturnType<typeof useGame>['actions']['goTravel'];
+}): ReactElement {
+  const live = useCareTick();
+  return <WardrobeSheet {...props} funds={live?.funds ?? 0} />;
 }
 
 function MenuButton({
-  label,
+  item,
   onPress,
   primary = false,
 }: {
-  label: string;
+  item: { icon: string; label: string };
   onPress: () => void;
   primary?: boolean;
 }): ReactElement {
@@ -141,8 +173,10 @@ function MenuButton({
       style={[styles.menuButton, primary && styles.menuPrimary]}
       onPress={onPress}
       accessibilityRole="button"
+      accessibilityLabel={item.label}
     >
-      <Text style={[styles.menuLabel, primary && styles.menuPrimaryLabel]}>{label}</Text>
+      <Text style={styles.menuIcon}>{item.icon}</Text>
+      <Text style={[styles.menuLabel, primary && styles.menuPrimaryLabel]}>{item.label}</Text>
     </Pressable>
   );
 }
@@ -175,9 +209,11 @@ const styles = StyleSheet.create({
     borderRadius: radius.md,
     paddingVertical: space.md,
     alignItems: 'center',
+    gap: space.xs,
   },
+  menuIcon: { fontSize: font.title },
   menuPrimary: { backgroundColor: color.accent },
-  menuLabel: { color: color.text, fontSize: font.body, fontWeight: '600' },
+  menuLabel: { color: color.text, fontSize: font.caption, fontWeight: '600' },
   menuPrimaryLabel: { color: color.textInverse },
   sheet: { flex: 1, backgroundColor: color.bg, padding: space.lg },
   sheetClose: { alignSelf: 'flex-end', padding: space.sm },

@@ -71,18 +71,39 @@ function needsSubject(id: ActionId): boolean {
   return balance.dynamic?.pick === 'chosen';
 }
 
+/**
+ * 하단 메뉴가 '대화'와 '일정'으로 갈리므로 목록도 그 기준으로 나눈다.
+ * 한 화면에 17개를 다 쏟으면 프린세스 메이커 UI의 약점(정보 밀도는 높은데 읽히지 않음)을
+ * 그대로 반복하게 된다 (조사 문서 §1-3).
+ */
+export type ActionGroup = 'training' | 'relation';
+
+const GROUP_CATEGORIES: Record<ActionGroup, readonly string[]> = {
+  training: ['subject', 'sport', 'art', 'life'],
+  relation: ['relation'],
+};
+
 export function ActionSheet({
   age,
   funds,
   slots,
+  group,
   onPick,
+  onOvertime,
 }: {
   age: number;
   funds: number;
   slots: number;
+  group: ActionGroup;
   onPick: (id: ActionId, subject?: SubjectStat) => void;
+  /** 야근은 행동 테이블에 없다. 일정 목록에서만 같이 보여준다 */
+  onOvertime?: () => void;
 }): ReactElement {
-  const available = ACTION_IDS.filter((id) => age >= ACTION_BALANCE[id].unlockAge);
+  const available = ACTION_IDS.filter(
+    (id) =>
+      age >= ACTION_BALANCE[id].unlockAge &&
+      GROUP_CATEGORIES[group].some((c) => c === ACTION_META[id].category),
+  );
 
   // 학습지·보습학원은 과목을 고르지 않으면 아무 과목도 오르지 않는다.
   // 목록에서 바로 누르게 두면 스트레스만 올리고 끝나므로, 과목을 고른 뒤에야 실행된다.
@@ -133,6 +154,21 @@ export function ActionSheet({
           </View>
         );
       })}
+
+      {group === 'training' && onOvertime !== undefined && (
+        <Pressable
+          style={[styles.row, styles.overtime, slots <= 0 && styles.disabled]}
+          disabled={slots <= 0}
+          onPress={onOvertime}
+          accessibilityRole="button"
+        >
+          <View style={styles.left}>
+            <Text style={styles.label}>야근</Text>
+            <Text style={styles.preview}>자금 ▲▲ · 사이 ▼</Text>
+          </View>
+          <Text style={styles.cost}>그 해 아이에게 아무것도 못 함</Text>
+        </Pressable>
+      )}
     </ScrollView>
   );
 }
@@ -150,6 +186,7 @@ const styles = StyleSheet.create({
     paddingVertical: space.md,
   },
   disabled: { opacity: 0.4 },
+  overtime: { borderWidth: 1, borderColor: color.line, marginTop: space.md },
   choosing: { borderWidth: 2, borderColor: color.accent },
   subjects: {
     flexDirection: 'row',

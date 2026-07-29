@@ -1,58 +1,144 @@
 /** 캐릭터 레이어 합성 */
 
-import { View, StyleSheet } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import type { ReactElement } from 'react';
 
-import type { ConsumptionTier } from '../../core/types';
+import type { ConsumptionTier, StressBand } from '../../core/types';
 import { color, radius } from '../theme/tokens';
 
 /**
- * 아트가 아직 없어서 단색 도형으로 세워둔다.
+ * 전신이 아니라 반신으로 세운다.
  *
- * 레이어를 지금부터 나눠두는 이유: 나중에 스프라이트를 끼울 때
- * 몸·상의·하의를 각각 갈아끼우면 되도록 구조를 먼저 맞춰놓는 것이다 (설계서 §14).
- * 의상 티어가 바뀌면 색이 바뀌는 것도 "갈아입히면 반영된다"의 최소 형태다.
+ * 반신 초상화 한 장을 파츠 교체로 돌려쓰는 게 그림 수를 늘리지 않으면서
+ * 표정·성장·의상 변화를 다 표현하는 방법이다 (조사 문서 §2-2).
+ * 지금은 단색 도형이지만 레이어 경계를 미리 그대로 맞춰둬서,
+ * 아트가 나오면 각 View를 Image로 바꾸는 것으로 끝난다.
+ *
+ * 캐릭터 조형(머리 실루엣·눈 모양·의상 디자인)은 원작에서 가져오지 않는다.
+ * 여기서 정하는 건 '레이어를 어떻게 쌓는가'뿐이다 (조사 문서 §2-4).
  */
-const TIER_TOP: Record<ConsumptionTier, string> = {
-  1: '#9AA7B8',
-  2: '#5B8DEF',
-  3: '#7C5CFC',
-  4: '#F5C24B',
+
+/** 의상 티어가 바뀌면 스프라이트가 반영된다. 지금은 색으로만 드러난다 */
+const TIER_CLOTH: Record<ConsumptionTier, string> = {
+  1: '#B9AFA2',
+  2: '#9FB0A8',
+  3: '#8E9BB5',
+  4: '#C2A25E',
 };
 
-/** 나이대별로 키가 자란다. 스프라이트 교체 지점과 같은 구간을 쓴다 */
-function bodyHeight(age: number): number {
-  if (age <= 5) return 120;
-  if (age <= 12) return 160;
-  return 200;
+/** 표정 파츠. 기분 등급 하나로만 갈린다 — 조합이 늘면 아트 물량이 곱으로 늘어난다 */
+const EYE_HEIGHT: Record<StressBand, number> = {
+  stable: 10,
+  tired: 8,
+  overload: 5,
+  limit: 3,
+};
+
+const MOUTH_WIDTH: Record<StressBand, number> = {
+  stable: 22,
+  tired: 16,
+  overload: 12,
+  limit: 10,
+};
+
+/** 나이대별 스프라이트 교체 지점. 4~5단계면 충분하다 (설계서 §14) */
+function scaleOf(age: number): number {
+  if (age <= 5) return 0.82;
+  if (age <= 12) return 0.92;
+  return 1;
 }
 
 export function Child({
   age,
   clothingTier,
+  mood,
 }: {
   age: number;
   clothingTier: ConsumptionTier;
+  mood: StressBand;
 }): ReactElement {
-  const height = bodyHeight(age);
+  const scale = scaleOf(age);
 
   return (
-    <View style={[styles.root, { height }]}>
-      <View style={[styles.head, { backgroundColor: color.skin }]} />
-      <View
-        style={[
-          styles.top,
-          { backgroundColor: TIER_TOP[clothingTier], height: height * 0.35 },
-        ]}
-      />
-      <View style={[styles.bottom, { height: height * 0.3 }]} />
+    <View style={styles.root}>
+      <View style={styles.backdrop} />
+
+      <View style={[styles.figure, { transform: [{ scale }] }]}>
+        <View style={styles.hairBack} />
+
+        <View style={styles.face}>
+          <View style={styles.hairFront} />
+
+          <View style={styles.eyes}>
+            <View style={[styles.eye, { height: EYE_HEIGHT[mood] }]} />
+            <View style={[styles.eye, { height: EYE_HEIGHT[mood] }]} />
+          </View>
+
+          <View style={styles.blushRow}>
+            <View style={styles.blush} />
+            <View style={styles.blush} />
+          </View>
+
+          <View style={[styles.mouth, { width: MOUTH_WIDTH[mood] }]} />
+        </View>
+
+        <View style={[styles.body, { backgroundColor: TIER_CLOTH[clothingTier] }]} />
+      </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   root: { alignItems: 'center', justifyContent: 'flex-end' },
-  head: { width: 56, height: 56, borderRadius: radius.pill },
-  top: { width: 72, borderRadius: radius.md, marginTop: 4 },
-  bottom: { width: 56, borderRadius: radius.sm, backgroundColor: color.clothBottom, marginTop: 4 },
+
+  /** 장소를 나타내는 단순 배경. 배경은 장소별 1장으로 재사용한다 (설계서 §14) */
+  backdrop: {
+    position: 'absolute',
+    bottom: 0,
+    width: 220,
+    height: 220,
+    borderRadius: radius.pill,
+    backgroundColor: color.accentSoft,
+  },
+
+  figure: { alignItems: 'center' },
+
+  hairBack: {
+    position: 'absolute',
+    top: 4,
+    width: 116,
+    height: 130,
+    borderRadius: radius.pill,
+    backgroundColor: color.hair,
+  },
+  face: {
+    width: 100,
+    height: 108,
+    borderRadius: 50,
+    backgroundColor: color.skin,
+    alignItems: 'center',
+    marginTop: 10,
+  },
+  hairFront: {
+    position: 'absolute',
+    top: -2,
+    width: 104,
+    height: 34,
+    borderTopLeftRadius: 52,
+    borderTopRightRadius: 52,
+    backgroundColor: color.hair,
+  },
+  eyes: { flexDirection: 'row', gap: 20, marginTop: 46 },
+  eye: { width: 10, borderRadius: radius.sm, backgroundColor: color.text },
+  blushRow: { flexDirection: 'row', gap: 44, marginTop: 4 },
+  blush: { width: 14, height: 6, borderRadius: radius.pill, backgroundColor: color.blush },
+  mouth: { height: 4, borderRadius: radius.pill, backgroundColor: color.text, marginTop: 6 },
+
+  body: {
+    width: 128,
+    height: 96,
+    borderTopLeftRadius: radius.lg,
+    borderTopRightRadius: radius.lg,
+    marginTop: -6,
+  },
 });

@@ -6,7 +6,7 @@ import type { PropsWithChildren, ReactElement } from 'react';
 import { CARE } from '../core/data/balance';
 import { selectDialogueAvoiding } from '../core/data/dialogue';
 import { SELF_RESTRAINT_LINES } from '../core/data/requests';
-import { OVERTIME } from '../core/data/balance';
+import { OVERTIME, TURN } from '../core/data/balance';
 import {
   acceptRequest,
   accrue,
@@ -73,6 +73,16 @@ export interface GameActions {
   next(): void;
 }
 
+/**
+ * 테스트 전용. 19턴을 매번 처음부터 굴리면 고등기 밸런스를 볼 수가 없다.
+ * 운영 빌드에서는 `debug` 프롭을 주지 않아 null이 되고, UI도 아무것도 그리지 않는다.
+ */
+export interface DevActions {
+  jumpToAge(age: number): void;
+  grantFunds(amount: number): void;
+  grantSlots(count: number): void;
+}
+
 export interface GameContextValue {
   /** 아직 시작하지 않았으면 null */
   state: TurnState | null;
@@ -81,6 +91,8 @@ export interface GameContextValue {
   /** 19세 판정이 끝났으면 결과. 아직이면 null */
   ending: Ending | null;
   actions: GameActions;
+  /** 디버그 모드가 아니면 null */
+  dev: DevActions | null;
 }
 
 export const GameContext = createContext<GameContextValue | null>(null);
@@ -139,8 +151,9 @@ function catchUp(state: GameState, now: number): GameState {
 
 export function GameProvider({
   platform,
+  debug = false,
   children,
-}: PropsWithChildren<{ platform: Platform }>): ReactElement {
+}: PropsWithChildren<{ platform: Platform; debug?: boolean }>): ReactElement {
   const stateRef = useRef<GameState | null>(null);
   const [turn, setTurn] = useState<TurnState | null>(null);
   const [live, setLive] = useState<LiveState | null>(null);
@@ -326,9 +339,31 @@ export function GameProvider({
     [commit, platform, refreshLine, saveKey, spend],
   );
 
+  const dev = useMemo<DevActions | null>(() => {
+    if (!debug) return null;
+
+    return {
+      jumpToAge(age) {
+        const current = stateRef.current;
+        if (current === null) return;
+        commit({ ...current, age, slots: TURN.slotsPerTurn });
+      },
+      grantFunds(amount) {
+        const current = stateRef.current;
+        if (current === null) return;
+        commit({ ...current, funds: current.funds + amount });
+      },
+      grantSlots(count) {
+        const current = stateRef.current;
+        if (current === null) return;
+        commit({ ...current, slots: current.slots + count });
+      },
+    };
+  }, [commit, debug]);
+
   const gameValue = useMemo<GameContextValue>(
-    () => ({ state: turn, line, ending, actions }),
-    [turn, line, ending, actions],
+    () => ({ state: turn, line, ending, actions, dev }),
+    [turn, line, ending, actions, dev],
   );
 
   return (
