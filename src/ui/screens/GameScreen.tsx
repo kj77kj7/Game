@@ -1,7 +1,7 @@
 /** 메인 게임 화면 */
 
 import { useState } from 'react';
-import { Alert, Modal, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from '@granite-js/native/react-native-safe-area-context';
 import type { ReactElement } from 'react';
 
@@ -21,6 +21,15 @@ import { TitleScreen } from './TitleScreen';
 import { MENU_LABEL, color, font, radius, space } from '../theme/tokens';
 
 type Panel = 'none' | 'schedule' | 'talk' | 'wardrobe' | 'stats';
+
+/** 무엇을 보고 있는지 시트 상단에 적는다. 목록만 있으면 어디서 왔는지 헷갈린다 */
+const PANEL_TITLE: Record<Panel, string> = {
+  none: '',
+  schedule: '일정',
+  talk: '대화',
+  wardrobe: '옷장',
+  stats: '성장',
+};
 
 /**
  * 세로 고정, 스크롤 없이 한 화면 (설계서 §12).
@@ -110,11 +119,25 @@ export function GameScreen({ onExit }: { onExit: () => void }): ReactElement | n
         <MenuButton item={MENU_LABEL.next} onPress={actions.next} primary />
       </View>
 
-      <Modal visible={panel !== 'none'} animationType="slide" onRequestClose={() => setPanel('none')}>
+      {/*
+        RN Modal을 쓰지 않는다.
+        앱인토스 웹뷰에서 Modal이 제대로 뜨는지 확인할 방법이 없었고,
+        같은 화면 안 오버레이로 그리면 웹·네이티브가 똑같이 동작한다.
+        전체를 덮는 시트라 연출상 차이도 없다.
+      */}
+      {panel !== 'none' && (
         <View style={styles.sheet}>
-          <Pressable style={styles.sheetClose} onPress={() => setPanel('none')}>
-            <Text style={styles.closeLabel}>✕</Text>
-          </Pressable>
+          <View style={styles.sheetHead}>
+            <Text style={styles.sheetTitle}>{PANEL_TITLE[panel]}</Text>
+            <Pressable
+              style={styles.sheetClose}
+              onPress={() => setPanel('none')}
+              accessibilityRole="button"
+              accessibilityLabel="닫기"
+            >
+              <Text style={styles.closeLabel}>✕</Text>
+            </Pressable>
+          </View>
 
           {(panel === 'schedule' || panel === 'talk') && (
             <ActionsPanel
@@ -136,7 +159,7 @@ export function GameScreen({ onExit }: { onExit: () => void }): ReactElement | n
           )}
           {panel === 'stats' && <StatDrawer stats={state.stats} />}
         </View>
-      </Modal>
+      )}
     </SafeAreaView>
   );
 }
@@ -199,7 +222,7 @@ const styles = StyleSheet.create({
   funds: { color: color.textWeak, fontSize: font.body, flex: 1 },
   close: { padding: space.sm },
   closeLabel: { color: color.textWeak, fontSize: font.title },
-  stage: { flex: 1, alignItems: 'center', justifyContent: 'flex-end' },
+  stage: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   stageHint: { color: color.textWeak, fontSize: font.caption, marginTop: space.sm },
   requestRow: { flexDirection: 'row', gap: space.sm, justifyContent: 'center' },
   chip: {
@@ -227,6 +250,23 @@ const styles = StyleSheet.create({
   menuPrimary: { backgroundColor: color.accent },
   menuLabel: { color: color.text, fontSize: font.caption, fontWeight: '600' },
   menuPrimaryLabel: { color: color.textInverse },
-  sheet: { flex: 1, backgroundColor: color.bg, padding: space.lg },
-  sheetClose: { alignSelf: 'flex-end', padding: space.sm },
+  sheet: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: color.bg,
+    paddingHorizontal: space.lg,
+    paddingBottom: space.lg,
+  },
+  sheetHead: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingTop: space.lg,
+    paddingBottom: space.sm,
+  },
+  sheetTitle: { color: color.text, fontSize: font.title, fontWeight: '700' },
+  sheetClose: { padding: space.sm },
 });

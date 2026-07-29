@@ -43,9 +43,11 @@ const MOUTH_WIDTH: Record<StressBand, number> = {
 
 /** 나이대별 스프라이트 교체 지점. 4~5단계면 충분하다 (설계서 §14) */
 function scaleOf(age: number): number {
-  if (age <= 5) return 0.82;
-  if (age <= 12) return 0.92;
-  return 1;
+  // 차이를 작게 두면 나이가 올라간 게 화면에서 안 읽힌다.
+  // 실제 성장 곡선보다 과장하는 편이 낫다 — 플레이어가 알아채야 의미가 있다.
+  if (age <= 5) return 0.7;
+  if (age <= 12) return 0.88;
+  return 1.05;
 }
 
 export function Child({
@@ -61,7 +63,8 @@ export function Child({
 
   return (
     <View style={styles.root}>
-      <View style={styles.backdrop} />
+      {/* 배경 원도 같이 커져야 한다. 고정 크기로 두면 큰 아이가 원을 뚫고 나간다 */}
+      <View style={[styles.backdrop, { width: 220 * scale, height: 220 * scale }]} />
 
       <View style={[styles.figure, { transform: [{ scale }] }]}>
         <View style={styles.hairBack} />
@@ -95,8 +98,6 @@ const styles = StyleSheet.create({
   backdrop: {
     position: 'absolute',
     bottom: 0,
-    width: 220,
-    height: 220,
     borderRadius: radius.pill,
     backgroundColor: color.accentSoft,
   },

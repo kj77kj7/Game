@@ -20,6 +20,14 @@ export default [
   // 이걸 빼면 파일마다 쓰지도 않는 React import를 넣어야 하고, 그건 no-unused-vars와 싸운다.
   pluginReact.configs.flat['jsx-runtime'],
 
+  // 미리보기 캡처 스크립트는 브라우저가 아니라 Node에서 돈다.
+  {
+    files: ['web/*.mjs'],
+    languageOptions: {
+      globals: { process: 'readonly', console: 'readonly', URL: 'readonly' },
+    },
+  },
+
   {
     rules: {
       // 나머지 연산자로 키를 덜어내는 패턴(TurnState 만들 때)을 위해 ignoreRestSiblings를 켠다.

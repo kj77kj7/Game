@@ -346,7 +346,12 @@ export function GameProvider({
       jumpToAge(age) {
         const current = stateRef.current;
         if (current === null) return;
-        commit({ ...current, age, slots: TURN.slotsPerTurn });
+
+        // 대사도 같이 갱신한다. 안 그러면 17세가 유아기 대사를 하고 있어서
+        // 나이대별 말투를 확인하려는 목적이 사라진다.
+        const jumped = { ...current, age, slots: TURN.slotsPerTurn };
+        commit(jumped);
+        refreshLine(jumped);
       },
       grantFunds(amount) {
         const current = stateRef.current;
@@ -359,7 +364,7 @@ export function GameProvider({
         commit({ ...current, slots: current.slots + count });
       },
     };
-  }, [commit, debug]);
+  }, [commit, debug, refreshLine]);
 
   const gameValue = useMemo<GameContextValue>(
     () => ({ state: turn, line, ending, actions, dev }),

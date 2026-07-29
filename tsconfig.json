@@ -4,8 +4,14 @@
     "baseUrl": "src",
     "target": "ESNext",
     "moduleResolution": "bundler",
-    "lib": ["ESNext"],
-    "types": ["react-native", "node", "jest"],
+    "lib": [
+      "ESNext"
+    ],
+    "types": [
+      "react-native",
+      "node",
+      "jest"
+    ],
     "jsx": "react-native",
     "resolveJsonModule": true,
     "esModuleInterop": true,
@@ -20,6 +26,13 @@
     "noUnusedLocals": true,
     "noUnusedParameters": true
   },
-  "include": ["**/*.ts", "**/*.tsx"],
-  "exclude": ["node_modules", ".tmp-test"]
+  "include": [
+    "**/*.ts",
+    "**/*.tsx"
+  ],
+  "exclude": [
+    "node_modules",
+    ".tmp-test",
+    "web"
+  ]
 }

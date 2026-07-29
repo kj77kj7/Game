@@ -21,3 +21,7 @@ yarn-error.log
 
 # 테스트·시뮬레이션 컴파일 산출물
 .tmp-test/
+
+# 미리보기 캡처 산출물
+web/shots/
+web/dist/

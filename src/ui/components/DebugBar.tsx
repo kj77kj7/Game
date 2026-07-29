@@ -4,7 +4,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import type { ReactElement } from 'react';
 
 import { useGame } from '../../app/hooks/useGame';
-import { color, font, radius, space } from '../theme/tokens';
+import { color, font, space } from '../theme/tokens';
 
 /**
  * 19턴을 매번 0세부터 굴리면 고등기 화면을 한 번 보는 데 몇 분이 걸린다.
@@ -17,7 +17,7 @@ export function DebugBar(): ReactElement | null {
   if (dev === null || state === null) return null;
 
   return (
-    <View style={styles.root} pointerEvents="box-none">
+    <View style={styles.root}>
       <View style={styles.bar}>
         <Chip label="+자금" onPress={() => dev.grantFunds(5000)} />
         <Chip label="+슬롯" onPress={() => dev.grantSlots(3)} />
@@ -39,21 +39,21 @@ function Chip({ label, onPress }: { label: string; onPress: () => void }): React
 }
 
 const styles = StyleSheet.create({
-  root: { position: 'absolute', left: 0, right: 0, bottom: 0, alignItems: 'center' },
+  // 겹쳐 그리면 하단 메뉴 라벨을 덮는다. 흐름 안에서 아래에 쌓는다
+  root: { alignItems: 'center' },
   bar: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'center',
     gap: space.xs,
+    width: '100%',
     backgroundColor: 'rgba(46, 42, 38, 0.9)',
-    borderTopLeftRadius: radius.md,
-    borderTopRightRadius: radius.md,
     paddingHorizontal: space.sm,
     paddingVertical: space.xs,
   },
   chip: {
     backgroundColor: 'rgba(255, 253, 249, 0.15)',
-    borderRadius: radius.sm,
+    borderRadius: 6,
     paddingHorizontal: space.sm,
     paddingVertical: space.xs,
   },
