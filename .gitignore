@@ -1,9 +1,23 @@
 node_modules/
-.granite/
 dist/
 build/
+npm-debug.log
 *.log
-.DS_Store
+
+.yarn/*
+.pnp.*
+yarn-error.log
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/sdks
+!.yarn/versions
+
 .env
 .env.local
+.granite
+.swc
+.DS_Store
+
+# 테스트·시뮬레이션 컴파일 산출물
 .tmp-test/
