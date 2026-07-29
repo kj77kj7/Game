@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView } from '@granite-js/native/react-native-safe-area-context';
 import type { ReactElement } from 'react';
 
 import { useGame } from '../../app/hooks/useGame';

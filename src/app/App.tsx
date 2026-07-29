@@ -1,6 +1,6 @@
 /** 앱 진입점. Granite 페이지에서 이것 하나만 렌더하면 된다 */
 
-import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { SafeAreaProvider } from '@granite-js/native/react-native-safe-area-context';
 import { StyleSheet, View } from 'react-native';
 import type { ReactElement } from 'react';
 

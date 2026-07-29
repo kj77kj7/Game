@@ -1,7 +1,7 @@
 /** 엔딩 결과 화면 */
 
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView } from '@granite-js/native/react-native-safe-area-context';
 import type { ReactElement } from 'react';
 
 import { MAJOR_LABEL } from '../../core/data/majors';
